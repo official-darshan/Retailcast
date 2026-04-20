@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RetailCast — Sales Forecast Tool</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef1f6;
+      color: #333;
+      padding: 32px 16px 60px;
+    }
+ 
+    /* ── Page header ───────────────────────────────── */
+    .page-header {
+      max-width: 720px;
+      margin: 0 auto 20px;
+    }
+    .badge {
+      display: inline-block;
+      background: #dbeafe;
+      color: #1d4ed8;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .page-header h1 {
+      font-size: 26px;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+    .page-header p {
+      font-size: 13px;
+      color: #777;
+    }
+ 
+    /* ── Card ──────────────────────────────────────── */
+    .container {
+      max-width: 720px;
+      margin: auto;
+      background: #fff;
+      border-radius: 16px;
+      padding: 34px 36px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+ 
+    /* ── Instructions banner ───────────────────────── */
+    .instructions {
+      background: #f0f6ff;
+      border-left: 4px solid #3b82f6;
+      border-radius: 0 10px 10px 0;
+      padding: 14px 16px;
+      margin-bottom: 30px;
+      font-size: 13px;
+      color: #444;
+      line-height: 1.75;
+    }
+    .instructions strong { color: #1a1a2e; display: block; margin-bottom: 2px; font-size: 14px; }
+ 
+    /* ── Section headers ───────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 28px 0 16px;
+    }
+    .section-icon {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .icon-store  { background: #dbeafe; }
+    .icon-date   { background: #dcfce7; }
+    .icon-promo  { background: #fef3c7; }
+    .section-header h2 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #888;
+    }
+    .section-divider {
+      flex: 1;
+      height: 1px;
+      background: #eee;
+      margin-left: 8px;
+    }
+ 
+    /* ── Form grid ─────────────────────────────────── */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+ 
+    .field { display: flex; flex-direction: column; gap: 3px; }
+ 
+    label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #555;
+      letter-spacing: 0.02em;
+    }
+ 
+    .desc {
+      font-size: 11px;
+      color: #3b82f6;
+      font-style: italic;
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+ 
+    input, select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid #ddd;
+      border-radius: 9px;
+      font-size: 14px;
+      background: #fafafa;
+      color: #333;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+    .hint { font-size: 11px; color: #bbb; margin-top: 2px; }
+ 
+    /* ── Auto-computed note ────────────────────────── */
+    .auto-note {
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+      border-radius: 9px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #166534;
+      margin-top: 20px;
+      line-height: 1.6;
+    }
+    .auto-note strong { display: block; margin-bottom: 2px; }
+ 
+    /* ── Button ────────────────────────────────────── */
+    button#predictBtn {
+      margin-top: 28px;
+      width: 100%;
+      padding: 14px;
+      background: #1d4ed8;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: background 0.2s, transform 0.1s;
+    }
+    button#predictBtn:hover  { background: #1e40af; }
+    button#predictBtn:active { transform: scale(0.99); }
+    button#predictBtn:disabled { background: #93c5fd; cursor: not-allowed; }
+ 
+    /* ── Result ────────────────────────────────────── */
+    .result {
+      display: none;
+      margin-top: 22px;
+      padding: 22px 24px;
+      border-radius: 12px;
+      background: #f0fdf4;
+      border: 1px solid #86efac;
+    }
+    .result.error {
+      background: #fef2f2;
+      border-color: #fca5a5;
+    }
+    .result-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+    .result-value {
+      font-size: 40px;
+      font-weight: 700;
+      color: #15803d;
+      line-height: 1.1;
+    }
+    .result.error .result-value {
+      font-size: 14px;
+      color: #dc2626;
+      font-weight: 400;
+    }
+    .result-sub {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 6px;
+    }
+ 
+    @media (max-width: 540px) {
+      .grid { grid-template-columns: 1fr; }
+      .container { padding: 22px 18px; }
+    }
+  </style>
+</head>
+<body>
+ 
+<!-- Page Header -->
+<div class="page-header">
+  <div class="badge">RetailCast · ML Sales Forecasting</div>
+  <h1>Store Daily Sales Predictor</h1>
+  <p>Powered by XGBoost · Rossmann Retail Dataset · 21 Engineered Features</p>
+</div>
+ 
+<div class="container">
+ 
+  <!-- Instructions -->
+  <div class="instructions">
+    <strong>How to use this tool</strong>
+    Fill in the three sections below — Store Information, Date &amp; Time, and Promotions &amp; Holidays.
+    Each field has a short description explaining what to enter. Once all fields are filled,
+    click <em>Predict Sales</em> to get the estimated daily revenue for that store on that day.
+    The model was trained on 844,000+ real sales records from 1,115 German retail stores.
+  </div>
+ 
+  <!-- ── SECTION 1: Store Information ── -->
+  <div class="section-header">
+    <div class="section-icon icon-store">🏪</div>
+    <h2>Store Information</h2>
+    <div class="section-divider"></div>
+  </div>
+ 
+  <div class="grid">
+ 
+    <div class="field">
+      <label>Store ID</label>
+      <div class="desc">Which store are you forecasting? Enter any store number between 1 and 1115.</div>
+      <input type="number" id="Store" value="1" min="1" max="1115">
+      <span class="hint">Range: 1 – 1115</span>
+    </div>
+ 
+    <div class="field">
+      <label>Store Type</label>
+      <div class="desc">The category of the store. Different store types serve different customer segments and have different average sales volumes.</div>
+      <select id="StoreType">
+        <option value="0">Type A — Largest, highest footfall</option>
+        <option value="1">Type B — Medium, specialty focus</option>
+        <option value="2">Type C — Smaller neighbourhood stores</option>
+        <option value="3">Type D — Compact, limited assortment</option>
+      </select>
+    </div>
+ 
+    <div class="field">
+      <label>Assortment Level</label>
+      <div class="desc">How wide is the product range in this store? A broader assortment typically leads to higher sales.</div>
+      <select id="Assortment">
+        <option value="0">Basic (a) — Core products only</option>
+        <option value="1">Extra (b) — Core + some extras</option>
+        <option value="2">Extended (c) — Full product range</option>
+      </select>
+    </div>
+ 
+    <div class="field">
+      <label>Competition Distance (metres)</label>
+      <div class="desc">How far away is the nearest competitor store? Stores with close competitors (under 1km) often see different sales patterns.</div>
+      <input type="number" id="CompetitionDistance" value="1000" min="0">
+      <span class="hint">Enter distance in metres, e.g. 500 for 0.5km</span>
+    </div>
+ 
+  </div>
+ 
+  <!-- ── SECTION 2: Date & Time ── -->
+  <div class="section-header">
+    <div class="section-icon icon-date">📅</div>
+    <h2>Date &amp; Time</h2>
+    <div class="section-divider"></div>
+  </div>
+ 
+  <div class="grid">
+ 
+    <div class="field">
+      <label>Year</label>
+      <div class="desc">The year you want to forecast for. The model was trained on 2013–2015 data but can generalise to nearby years.</div>
+      <input type="number" id="Year" value="2015" min="2013" max="2030">
+    </div>
+ 
+    <div class="field">
+      <label>Month</label>
+      <div class="desc">Which month? December and November typically see the highest sales due to holiday shopping.</div>
+      <input type="number" id="Month" value="6" min="1" max="12">
+      <span class="hint">1 = January, 12 = December</span>
+    </div>
+ 
+    <div class="field">
+      <label>Day of Month</label>
+      <div class="desc">The specific date. Month-start and month-end days often see salary-driven spending spikes.</div>
+      <input type="number" id="Day" value="15" min="1" max="31">
+    </div>
+ 
+    <div class="field">
+      <label>Week of Year</label>
+      <div class="desc">Which week number is this date in the calendar year? Week 51–52 usually see Christmas surges.</div>
+      <input type="number" id="WeekOfYear" value="24" min="1" max="53">
+    </div>
+ 
+    <div class="field">
+      <label>Day of Week</label>
+      <div class="desc">Weekdays and weekends have very different sales patterns. Mondays and Sundays are often the strongest days.</div>
+      <select id="DayOfWeek" onchange="autoWeekend()">
+        <option value="1">Monday</option>
+        <option value="2">Tuesday</option>
+        <option value="3">Wednesday</option>
+        <option value="4">Thursday</option>
+        <option value="5">Friday</option>
+        <option value="6">Saturday</option>
+        <option value="7">Sunday</option>
+      </select>
+    </div>
+ 
+    <div class="field">
+      <label>Quarter</label>
+      <div class="desc">Which business quarter? Q4 (Oct–Dec) is typically the highest revenue quarter for retail stores.</div>
+      <select id="Quarter">
+        <option value="1">Q1 — January to March</option>
+        <option value="2" selected>Q2 — April to June</option>
+        <option value="3">Q3 — July to September</option>
+        <option value="4">Q4 — October to December (peak)</option>
+      </select>
+    </div>
+ 
+    <div class="field">
+      <label>Is this a Weekend?</label>
+      <div class="desc">Automatically set when you pick Day of Week above. Weekends attract more leisure shoppers, affecting sales volume.</div>
+      <select id="IsWeekend">
+        <option value="0">No — it is a weekday</option>
+        <option value="1">Yes — it is Saturday or Sunday</option>
+      </select>
+    </div>
+ 
+    <div class="field">
+      <label>Is this the Start of a Month?</label>
+      <div class="desc">The 1st of a month. Many shoppers receive salaries at month-start, which can boost spending noticeably.</div>
+      <select id="IsMonthStart">
+        <option value="0">No — not the 1st</option>
+        <option value="1">Yes — it is the 1st of the month</option>
+      </select>
+    </div>
+ 
+    <div class="field">
+      <label>Is this the End of a Month?</label>
+      <div class="desc">The last day of a month. Some stores run end-of-month clearance which can affect sales totals.</div>
+      <select id="IsMonthEnd">
+        <option value="0">No — not the last day</option>
+        <option value="1">Yes — it is the last day of the month</option>
+      </select>
+    </div>
+ 
+  </div>
+ 
+  <!-- ── SECTION 3: Promotions & Holidays ── -->
+  <div class="section-header">
+    <div class="section-icon icon-promo">🏷️</div>
+    <h2>Promotions &amp; Holidays</h2>
+    <div class="section-divider"></div>
+  </div>
+ 
+  <div class="grid">
+ 
+    <div class="field">
+      <label>Is a Promotion Running?</label>
+      <div class="desc">Is the store running a current promotional campaign on this day? Promotions are one of the strongest predictors of higher sales — they typically increase revenue by 15–25%.</div>
+      <select id="Promo">
+        <option value="1">Yes — promotion is active</option>
+        <option value="0">No — no promotion today</option>
+      </select>
+    </div>
+ 
+    <div class="field">
+      <label>Is Promo2 (Recurring Promo) Active?</label>
+      <div class="desc">Promo2 is a separate, store-specific ongoing promotion that runs across certain months. Not all stores participate. Check the store profile to confirm.</div>
+      <select id="Promo2">
+        <option value="0">No — store does not run Promo2</option>
+        <option value="1">Yes — store is in a Promo2 cycle</option>
+      </select>
+    </div>
+ 
+    <div class="field">
+      <label>State Holiday</label>
+      <div class="desc">Is today a public or state holiday? Stores are often closed or have reduced hours on public holidays, which significantly impacts sales. Select the type if applicable.</div>
+      <select id="StateHoliday">
+        <option value="0">None — regular trading day</option>
+        <option value="1">Public Holiday</option>
+        <option value="2">Easter Holiday</option>
+        <option value="3">Christmas Holiday</option>
+      </select>
+    </div>
+ 
+    <div class="field">
+      <label>School Holiday?</label>
+      <div class="desc">Is today during a school holiday period? School holidays can increase or decrease footfall depending on the store type and its location.</div>
+      <select id="SchoolHoliday">
+        <option value="0">No — school is in session</option>
+        <option value="1">Yes — school holiday period</option>
+      </select>
+    </div>
+ 
+  </div>
+ 
+  <!-- Auto-computed features note -->
+  <div class="auto-note">
+    <strong>✅ 5 features are calculated automatically — no action needed</strong>
+    The following inputs are computed behind the scenes from the values you entered above:
+    <em>Promo on Weekend</em>, <em>Promo × Month combination</em>,
+    <em>Store × Day-of-Week pattern</em>, <em>Near Competitor flag</em>.
+    These interaction features help the model capture combined effects (e.g. a promotion running specifically on a weekend).
+  </div>
+ 
+  <!-- Predict Button -->
+  <button id="predictBtn" onclick="predict()">Predict Sales</button>
+ 
+  <!-- Result Box -->
+  <div class="result" id="result">
+    <div class="result-label">Predicted Daily Sales Revenue</div>
+    <div class="result-value" id="resultValue">—</div>
+    <div class="result-sub" id="resultSub"></div>
+  </div>
+ 
+</div><!-- end .container -->
+ 
+<script>
+  // ── Auto-set IsWeekend when DayOfWeek changes ────────────────────────────
+  function autoWeekend() {
+    const d = parseInt(document.getElementById('DayOfWeek').value);
+    document.getElementById('IsWeekend').value = (d >= 6) ? '1' : '0';
+  }
+ 
+  // ── Fields the form sends directly to the server ─────────────────────────
+  // The 5 derived features (Promo_Weekend, Promo_Month, Store_DayOfWeek,
+  // NearCompetitor) are computed inside app.py from these base values.
+  const FORM_FIELDS = [
+    'Store', 'DayOfWeek', 'Promo', 'StateHoliday', 'SchoolHoliday',
+    'StoreType', 'Assortment', 'CompetitionDistance', 'Promo2',
+    'Year', 'Month', 'Day', 'WeekOfYear', 'IsWeekend',
+    'IsMonthStart', 'IsMonthEnd', 'Quarter'
+  ];
+ 
+  // ── Main predict function ─────────────────────────────────────────────────
+  async function predict() {
+    const btn       = document.getElementById('predictBtn');
+    const resultDiv = document.getElementById('result');
+    const resultVal = document.getElementById('resultValue');
+    const resultSub = document.getElementById('resultSub');
+ 
+    // Validate: all fields must be filled
+    for (const f of FORM_FIELDS) {
+      const el = document.getElementById(f);
+      if (!el || el.value === '') {
+        alert(`Please fill in the "${f}" field before predicting.`);
+        return;
+      }
+    }
+ 
+    btn.disabled    = true;
+    btn.textContent = 'Calculating prediction…';
+    resultDiv.style.display = 'none';
+ 
+    // Build data object from form
+    const data = {};
+    FORM_FIELDS.forEach(f => { data[f] = document.getElementById(f).value; });
+ 
+    try {
+      const res  = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const json = await res.json();
+ 
+      resultDiv.style.display = 'block';
+ 
+      if (json.status === 'success') {
+        resultDiv.className = 'result';
+        resultVal.textContent = '€' + json.prediction.toLocaleString('en-IE', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+        const dayNames = ['','Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+        const dow = dayNames[parseInt(data.DayOfWeek)] || '';
+        resultSub.textContent =
+          `Store ${data.Store} · ${dow}, ${data.Day}/${data.Month}/${data.Year}` +
+          (data.Promo === '1' ? ' · Promotion active' : '');
+      } else {
+        resultDiv.className   = 'result error';
+        resultVal.textContent = 'Error: ' + json.error;
+        resultSub.textContent = 'Please check your inputs and try again.';
+      }
+ 
+    } catch (e) {
+      resultDiv.style.display = 'block';
+      resultDiv.className     = 'result error';
+      resultVal.textContent   = 'Could not connect to the server.';
+      resultSub.textContent   = 'Make sure Flask is running: open a terminal and type  python app.py';
+    }
+ 
+    btn.disabled    = false;
+    btn.textContent = 'Predict Sales';
+  }
+</script>
+</body>
+</html>
